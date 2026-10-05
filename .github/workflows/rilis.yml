@@ -1,0 +1,37 @@
+# Every push to main: test, build, and publish kantin-paket.tgz as a GitHub Release.
+# The Termux host phone picks up the newest release on its next start (scripts/perbarui.sh).
+name: Rilis
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rilis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            app/package-lock.json
+      - run: npm ci
+      - run: npm ci --prefix app
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Package
+        run: |
+          echo "v${{ github.run_number }}" > versi.txt
+          tar -czf kantin-paket.tgz dist app/build/client package.json package-lock.json versi.txt README.md docs/deploy-termux.md scripts
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "v${{ github.run_number }}" kantin-paket.tgz --title "v${{ github.run_number }}" --notes "$(git log -1 --pretty=%s)"

@@ -1,0 +1,9 @@
+{
+  "name": "Kantin",
+  "short_name": "Kantin",
+  "start_url": "/",
+  "display": "fullscreen",
+  "background_color": "#ffffff",
+  "theme_color": "#E4572E",
+  "icons": []
+}

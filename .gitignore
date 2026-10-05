@@ -1,0 +1,12 @@
+node_modules/
+dist/
+data/
+app/build/
+*.db
+*.db-wal
+*.db-shm
+.superpowers/
+app/node_modules/
+app/.react-router/
+kantin-paket.tgz
+*.log
