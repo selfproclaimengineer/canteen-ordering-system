@@ -13,6 +13,13 @@ termux-wake-lock
 # Find it with: ip -4 addr show | grep inet   (look for the wlan/ap interface)
 # export KANTIN_LOKAL="127.0.0.0/8,::1/128,192.168.43.0/24"
 
+# Internet access with a static QR (scripts/tunnel.sh). Skip with: touch ~/kantin/.tanpa-tunnel
+if command -v cloudflared >/dev/null && [ ! -f .tanpa-tunnel ]; then
+  pkill -f "scripts/tunnel.sh" 2>/dev/null
+  pkill -f "cloudflared tunnel" 2>/dev/null
+  sh scripts/tunnel.sh &
+fi
+
 gagal=0
 while true; do
   [ -f .tanpa-update ] || sh scripts/perbarui.sh

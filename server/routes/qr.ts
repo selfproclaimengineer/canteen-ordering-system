@@ -32,6 +32,8 @@ export function qrRoutes(ctx: Ctx): Router {
 
   r.get('/qr/:kode/info', (req, res) => {
     const q = cekKode(req);
+    // The static QR page on GitHub Pages checks the server is up before redirecting (pages/404.html).
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.json({ buka: q.buka, jaringan_ok: jaringanOk(req, q), ip: ipPengirim(req) });
   });
 
