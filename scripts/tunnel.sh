@@ -6,7 +6,7 @@
 cd "$HOME/kantin" || exit 1
 
 pkill -f "dist/server/umumkan.js" 2>/dev/null
-node dist/server/umumkan.js &
+[ -f dist/server/umumkan.js ] && node dist/server/umumkan.js &
 
 while true; do
   # The log is read by umumkan.js when the metrics endpoint is not available.
