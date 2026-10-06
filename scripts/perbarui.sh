@@ -5,7 +5,6 @@
 # Always exits 0: no internet or a broken package must never stop the kantin from starting.
 
 REPO="${KANTIN_REPO:-selfproclaimengineer/canteen-ordering-system}"
-API="${KANTIN_RILIS_API:-https://api.github.com/repos/$REPO/releases/latest}"
 DIR="${KANTIN_DIR:-$HOME/kantin}"
 DIGANTI="dist app package.json package-lock.json versi.txt"
 
@@ -22,7 +21,13 @@ if [ "$1" = "--kembalikan" ]; then
   exit 0
 fi
 
-tag=$(curl -fsSL --max-time 15 "$API" 2>/dev/null | grep -o '"tag_name": *"[^"]*"' | head -n 1 | sed 's/.*"\([^"]*\)"$/\1/')
+if [ -n "$KANTIN_RILIS_API" ]; then
+  tag=$(curl -fsSL --max-time 15 "$KANTIN_RILIS_API" 2>/dev/null | grep -o '"tag_name": *"[^"]*"' | head -n 1 | sed 's/.*"\([^"]*\)"$/\1/')
+else
+  # /releases/latest redirects to /releases/tag/<tag>. Unlike api.github.com it has no 60-per-hour limit,
+  # which a shared school or mobile-data IP uses up quickly.
+  tag=$(curl -fsIL -o /dev/null -w '%{url_effective}' --max-time 20 "https://github.com/$REPO/releases/latest" 2>/dev/null | sed -n 's#.*/releases/tag/##p')
+fi
 if [ -z "$tag" ]; then echo "Update: tidak bisa cek (offline?), pakai versi sekarang"; exit 0; fi
 if [ "$tag" = "$(cat versi.txt 2>/dev/null)" ]; then echo "Update: sudah versi terbaru ($tag)"; exit 0; fi
 if grep -qx "$tag" .tolak 2>/dev/null; then echo "Update: $tag pernah gagal, dilewati"; exit 0; fi
