@@ -142,3 +142,36 @@ chmod +x scripts/*.sh
 ```
 
 Lalu restart server (Ctrl+C di Termux, jalankan `./scripts/jalan.sh` lagi, atau restart HP).
+
+## QR statis lewat internet (cloudflared + GitHub Pages)
+
+Quick tunnel Cloudflare memberi alamat `xxxx.trycloudflare.com` baru setiap kali menyala. Supaya QR di meja tidak perlu dicetak ulang, QR menunjuk ke halaman tetap di GitHub Pages:
+
+`https://selfproclaimengineer.github.io/canteen-ordering-system/pesan/<kode>`
+
+Halaman itu mencari alamat tunnel terbaru, menunggu sampai server menjawab, lalu meneruskan pelanggan ke halaman pesan. Alamat tunnel disimpan di branch `gh-pages` dalam bentuk terenkripsi dengan kode QR, jadi tidak terbaca dari repo publik.
+
+Setup sekali di HP host:
+
+1. Pasang cloudflared:
+   ```sh
+   pkg install -y cloudflared
+   ```
+   Kalau cloudflared selama ini dijalankan sendiri di sesi Termux lain, hentikan. `jalan.sh` sekarang menjalankannya.
+2. Buat token GitHub di github.com: Settings › Developer settings › Personal access tokens › **Fine-grained tokens** › Generate new token.
+   - Repository access: **Only select repositories** › `canteen-ordering-system`.
+   - Permissions › Repository › **Contents: Read and write**. Izin lain biarkan.
+   - Salin token (diawali `github_pat_`).
+3. Simpan token di HP. Perintah ini tidak menampilkan token di layar dan tidak menyimpannya di riwayat:
+   ```sh
+   cd ~/kantin
+   read -rsp "Tempel token: " T && printf '%s' "$T" > .github-token && chmod 600 .github-token && unset T && echo " tersimpan"
+   ```
+   Tempel token dengan tekan lama › Paste, lalu Enter.
+4. Restart server (Ctrl+C lalu `./scripts/jalan.sh`, atau restart HP). Dalam ±1 menit Termux menulis `QR statis: alamat diumumkan (...)`.
+5. Di Edit › QR, isi alamat publik dengan `https://selfproclaimengineer.github.io/canteen-ordering-system`, Simpan, lalu cetak QR-nya. QR ini tetap selama tombol "Ganti kode" tidak ditekan.
+
+Catatan:
+- Setelah HP menyala ulang, QR siap lagi dalam ±1–3 menit. Selama itu halaman QR menampilkan "Server kantin sedang dinyalakan" dan mencoba lagi sendiri.
+- Token bisa menulis ke repo. Kalau HP hilang, hapus token di GitHub (Settings › Fine-grained tokens › Delete). Token kedaluwarsa sesuai tanggal yang dipilih; buat yang baru dan ulangi langkah 3.
+- Untuk mematikan tunnel: `touch ~/kantin/.tanpa-tunnel`.

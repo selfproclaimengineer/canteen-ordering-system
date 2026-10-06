@@ -10,3 +10,5 @@ app/node_modules/
 app/.react-router/
 kantin-paket.tgz
 *.log
+.github-token
+.tunnel.log

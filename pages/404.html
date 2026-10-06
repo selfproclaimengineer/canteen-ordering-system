@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pesan Kantin</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; font: 600 18px/1.4 system-ui, sans-serif; color: #111; text-align: center; padding: 16px; box-sizing: border-box; }
+  small { display: block; margin-top: 8px; font-weight: 400; color: #555; }
+</style>
+</head>
+<body>
+<div id="pesan">Membuka menu kantin…</div>
+<script>
+  // Static QR: .../pesan/<kode>. alamat.json holds the current server address, encrypted with the QR code
+  // (written by server/umumkan.ts on the host phone). Wait until the server answers, then go there.
+  const tulis = (t, kecil) => { document.getElementById('pesan').innerHTML = t + (kecil ? '<small>' + kecil + '</small>' : ''); };
+  const m = location.pathname.match(/\/pesan\/([A-Za-z0-9]+)\/?$/);
+  const u8 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+  const tunggu = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  async function alamat(kode) {
+    const r = await fetch('../alamat.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) throw new Error('belum ada');
+    const j = await r.json();
+    const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('kantin-qr:' + kode));
+    const kunci = await crypto.subtle.importKey('raw', hash, 'AES-GCM', false, ['decrypt']);
+    const isi = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u8(j.iv) }, kunci, u8(j.data));
+    return JSON.parse(new TextDecoder().decode(isi)).alamat;
+  }
+
+  async function jalan(kode) {
+    for (;;) {
+      try {
+        const a = await alamat(kode);
+        const r = await fetch(a + '/api/qr/' + kode + '/info', { signal: AbortSignal.timeout(8000) });
+        if (r.ok) return location.replace(a + '/pesan/' + kode);
+        if (r.status === 404) return tulis('Pemesanan lewat QR sedang tidak aktif.', 'Silakan pesan di meja kantin.');
+      } catch (e) {
+        // Server off, starting up, or the address is still being published.
+      }
+      tulis('Server kantin sedang dinyalakan…', 'Halaman ini mencoba lagi sendiri. Tunggu sebentar.');
+      await tunggu(5000);
+    }
+  }
+
+  if (m) jalan(m[1]); else tulis('QR tidak dikenal.', 'Scan QR yang ada di meja kantin.');
+</script>
+</body>
+</html>

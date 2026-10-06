@@ -306,3 +306,9 @@ test('admin settings say when the school-network check is on', async () => {
   const auth = { Authorization: `Bearer ${await login(app, 'admin')}` };
   expect((await request(app).get('/api/admin/qr').set(auth)).body.cek_jaringan).toBe(true);
 });
+
+test('QR info may be read by the static GitHub Pages QR page (CORS)', async () => {
+  const { app } = setup({ hanyaSekolah: false });
+  const res = await request(app).get(`/api/qr/${KODE}/info`);
+  expect(res.headers['access-control-allow-origin']).toBe('*');
+});
