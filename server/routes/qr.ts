@@ -67,7 +67,13 @@ export function qrRoutes(ctx: Ctx): Router {
     const uuid = parse(z.uuid(), req.query.uuid);
     const o = ambilOrder(ctx.db, idParam(req.params.id));
     if (!o || o.sumber !== 'qr' || o.client_uuid !== uuid) throw new HttpError(404, 'Order tidak ditemukan');
-    res.json({ id: o.id, nomor: o.nomor, status: o.status, total: totalOrder(o.items), nama: o.nama });
+    res.json({
+      id: o.id, nomor: o.nomor, status: o.status, total: totalOrder(o.items), nama: o.nama, catatan: o.catatan,
+      // What the student ordered, so they remember it. Kitchen ticks (siap_at) stay kitchen-only.
+      items: o.items.map((i) => ({
+        nama: i.nama, qty: i.qty, pilihan: i.pilihan.map((p) => `${p.grup} ${p.label}`), batal: i.batal_at !== null,
+      })),
+    });
   });
 
   r.post('/qr/:kode/orders/:id/cancel', (req, res) => {

@@ -18,6 +18,12 @@ interface Lacak {
   nama: string;
 }
 
+/** What the student ordered, from the status endpoint. */
+interface Rincian {
+  catatan: string | null;
+  items: { nama: string; qty: number; pilihan: string[]; batal: boolean }[];
+}
+
 const NAMA_VALID = /^[\p{L}\p{N} .\-]{1,10}$/u;
 
 const KUNCI_LACAK = 'qr-lacak';
@@ -49,6 +55,7 @@ export default function Pesan() {
   const [galat, setGalat] = useState('');
   const [lacak, setLacak] = useState<Lacak | null>(() => bacaLacak());
   const [status, setStatus] = useState<StatusOrder | null>(null);
+  const [rincian, setRincian] = useState<Rincian | null>(null);
   const [lacakHilang, setLacakHilang] = useState(false);
   const [putus, setPutus] = useState(false);
   const [nama, setNama] = useState(() => window.localStorage.getItem('qr-nama') ?? '');
@@ -61,6 +68,7 @@ export default function Pesan() {
     else window.localStorage.removeItem(KUNCI_LACAK);
     setLacak(l);
     setStatus(null);
+    setRincian(null);
     setLacakHilang(false);
     sudahGetar.current = false;
   }, []);
@@ -99,9 +107,10 @@ export default function Pesan() {
     let t = 0;
     const cek = async () => {
       try {
-        const s = await api<{ status: StatusOrder }>(`/qr/${kode}/orders/${lacak.id}?uuid=${lacak.uuid}`);
+        const s = await api<{ status: StatusOrder } & Rincian>(`/qr/${kode}/orders/${lacak.id}?uuid=${lacak.uuid}`);
         if (!hidup) return;
         setStatus(s.status);
+        setRincian({ catatan: s.catatan, items: s.items });
         if (s.status === 'siap' && !sudahGetar.current) {
           sudahGetar.current = true;
           navigator.vibrate?.([300, 150, 300, 150, 300]);
@@ -155,6 +164,21 @@ export default function Pesan() {
         {lacak.nama && <div className="nama-besar">{lacak.nama}</div>}
         <div className="status-teks">{lacakHilang ? 'Tunjukkan nomor ini di kantin' : LABEL_STATUS[s]}</div>
         <div className="konfirmasi-total">{rupiah(lacak.total)} · bayar saat ambil</div>
+        {rincian && (
+          <div className="rincian-qr">
+            <b>Pesananmu</b>
+            <ul>
+              {rincian.items.map((i, k) => (
+                <li key={k} className={i.batal ? 'coret' : ''}>
+                  {i.qty}× {i.nama}
+                  {i.pilihan.length > 0 && <small> · {i.pilihan.join(' · ')}</small>}
+                  {i.batal && <small> (dibatalkan dapur)</small>}
+                </li>
+              ))}
+            </ul>
+            {rincian.catatan && <div>Catatan: {rincian.catatan}</div>}
+          </div>
+        )}
         {alur.info && <div className={`info ${alur.info.nada}`}>{alur.info.teks}</div>}
         <div className="aksi">
           {!lacakHilang && s === 'baru' && sisa > 0 && <button className="merah" onClick={() => void batal()}>Batalkan ({sisa})</button>}
