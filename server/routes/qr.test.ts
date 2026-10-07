@@ -102,7 +102,10 @@ test('status needs the matching client_uuid and only shows QR orders', async () 
   const o = await pesan(b);
   const status = (id: number, uuid: string) => request(app).get(`/api/qr/${KODE}/orders/${id}?uuid=${uuid}`).set(lewat());
 
-  expect((await status(o.body.id, b.client_uuid)).body).toEqual({ id: o.body.id, nomor: o.body.nomor, status: 'baru', total: 3000, nama: 'Budi' });
+  expect((await status(o.body.id, b.client_uuid)).body).toEqual({
+    id: o.body.id, nomor: o.body.nomor, status: 'baru', total: 3000, nama: 'Budi', catatan: null,
+    items: [{ nama: 'Es Teh', qty: 1, pilihan: [], batal: false }],
+  });
   expect((await status(o.body.id, randomUUID())).status).toBe(404);
 
   const kasirUuid = randomUUID();
@@ -311,4 +314,17 @@ test('QR info may be read by the static GitHub Pages QR page (CORS)', async () =
   const { app } = setup({ hanyaSekolah: false });
   const res = await request(app).get(`/api/qr/${KODE}/info`);
   expect(res.headers['access-control-allow-origin']).toBe('*');
+});
+
+test('the student sees what they ordered, with options and note, but not the kitchen ticks', async () => {
+  const { pesan, body, app, s } = setup({ hanyaSekolah: false });
+  const b = { ...body(), catatan: 'sambal dipisah', items: [{ menu_id: s.mie, qty: 2, pilihan_ids: [s.pedas[3], s.telur] }, { menu_id: s.esTeh, qty: 1, pilihan_ids: [] }] };
+  const o = await pesan(b);
+  const res = await request(app).get(`/api/qr/${KODE}/orders/${o.body.id}?uuid=${b.client_uuid}`);
+  expect(res.body.catatan).toBe('sambal dipisah');
+  expect(res.body.items).toEqual([
+    { nama: 'Mie Goreng', qty: 2, pilihan: ['Kepedasan 3', 'Ukuran Kecil', 'Topping Telur'], batal: false },
+    { nama: 'Es Teh', qty: 1, pilihan: [], batal: false },
+  ]);
+  expect(JSON.stringify(res.body)).not.toContain('siap_at');
 });

@@ -195,3 +195,10 @@ td.angka, th.angka { text-align: right; }
 .judul-suara { flex: 1 1 12em; }
 .tombol-file { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 10px; background: var(--abu); font-weight: 700; cursor: pointer; }
 .input-catatan { flex: none; min-height: 44px; }
+
+/* QR status screen: what the student ordered */
+.rincian-qr { width: 100%; max-height: 35vh; overflow-y: auto; margin-bottom: 12px; padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.7); text-align: left; font-size: 15px; }
+.rincian-qr ul { margin: 6px 0; padding-left: 18px; }
+.rincian-qr li { margin: 2px 0; overflow-wrap: break-word; }
+.rincian-qr li.coret { text-decoration: line-through; opacity: 0.7; }
+.rincian-qr small { color: #374151; }
