@@ -16,11 +16,13 @@
   // (written by server/umumkan.ts on the host phone). Wait until the server answers, then go there.
   const tulis = (t, kecil) => { document.getElementById('pesan').innerHTML = t + (kecil ? '<small>' + kecil + '</small>' : ''); };
   const m = location.pathname.match(/\/pesan\/([A-Za-z0-9]+)\/?$/);
+  // Static staff links: .../staf/<kode>/order or .../staf/<kode>/dapur, address in staf.json.
+  const s = location.pathname.match(/\/staf\/([A-Za-z0-9]+)\/(order|dapur)\/?$/);
   const u8 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
   const tunggu = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  async function alamat(kode) {
-    const r = await fetch('../alamat.json?t=' + Date.now(), { cache: 'no-store' });
+  async function alamat(kode, file = '../alamat.json') {
+    const r = await fetch(file + '?t=' + Date.now(), { cache: 'no-store' });
     if (!r.ok) throw new Error('belum ada');
     const j = await r.json();
     const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('kantin-qr:' + kode));
@@ -44,7 +46,24 @@
     }
   }
 
-  if (m) jalan(m[1]); else tulis('QR tidak dikenal.', 'Scan QR yang ada di meja kantin.');
+  async function jalanStaf(kode, layar) {
+    for (;;) {
+      try {
+        const a = await alamat(kode, '../../staf.json');
+        const r = await fetch(a + '/api/menu', { signal: AbortSignal.timeout(8000) });
+        // kembali: the app returns here by itself when the tunnel address changes.
+        if (r.ok) return location.replace(a + '/' + layar + '?kembali=' + encodeURIComponent(location.href));
+      } catch (e) {
+        // Server off, starting up, address not published yet, or a wrong link.
+      }
+      tulis('Server kantin sedang dinyalakan…', 'Halaman ini mencoba lagi sendiri. Kalau lebih dari 5 menit, cek HP server.');
+      await tunggu(5000);
+    }
+  }
+
+  if (m) jalan(m[1]);
+  else if (s) jalanStaf(s[1], s[2]);
+  else tulis('QR tidak dikenal.', 'Scan QR yang ada di meja kantin.');
 </script>
 </body>
 </html>
