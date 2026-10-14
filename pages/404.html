@@ -16,15 +16,30 @@
   // (written by server/umumkan.ts on the host phone). Wait until the server answers, then go there.
   const tulis = (t, kecil) => { document.getElementById('pesan').innerHTML = t + (kecil ? '<small>' + kecil + '</small>' : ''); };
   const m = location.pathname.match(/\/pesan\/([A-Za-z0-9]+)\/?$/);
-  // Static staff links: .../staf/<kode>/order or .../staf/<kode>/dapur, address in staf.json.
+  // Static staff links: .../staf/<kode>/order or .../staf/<kode>/dapur (address in alamat.json, field staf).
   const s = location.pathname.match(/\/staf\/([A-Za-z0-9]+)\/(order|dapur)\/?$/);
   const u8 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
   const tunggu = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  async function alamat(kode, file = '../alamat.json') {
-    const r = await fetch(file + '?t=' + Date.now(), { cache: 'no-store' });
+  // GitHub Pages serves a copy that can be up to 10 minutes old (its cache ignores ?t=). The GitHub API is at
+  // most 1 minute old but allows only 60 requests per hour per network, so it is the fallback, at most every 30 s.
+  const API = 'https://api.github.com/repos/selfproclaimengineer/canteen-ordering-system/contents/alamat.json?ref=gh-pages';
+  let apiTerakhir = 0;
+  async function ambilJson(base, segar) {
+    if (segar && Date.now() - apiTerakhir > 30000) {
+      apiTerakhir = Date.now();
+      const r = await fetch(API, { cache: 'no-store', headers: { Accept: 'application/vnd.github.raw+json' } });
+      if (r.ok) return r.json();
+    }
+    const r = await fetch(base + 'alamat.json', { cache: 'no-store' });
     if (!r.ok) throw new Error('belum ada');
-    const j = await r.json();
+    return r.json();
+  }
+
+  async function alamat(kode, base, segar, staf) {
+    const semua = await ambilJson(base, segar);
+    const j = staf ? semua.staf : semua;
+    if (!j) throw new Error('link staf belum diumumkan');
     const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('kantin-qr:' + kode));
     const kunci = await crypto.subtle.importKey('raw', hash, 'AES-GCM', false, ['decrypt']);
     const isi = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u8(j.iv) }, kunci, u8(j.data));
@@ -32,9 +47,9 @@
   }
 
   async function jalan(kode) {
-    for (;;) {
+    for (let coba = 0; ; coba++) {
       try {
-        const a = await alamat(kode);
+        const a = await alamat(kode, '../', coba > 0, false);
         const r = await fetch(a + '/api/qr/' + kode + '/info', { signal: AbortSignal.timeout(8000) });
         if (r.ok) return location.replace(a + '/pesan/' + kode);
         if (r.status === 404) return tulis('Pemesanan lewat QR sedang tidak aktif.', 'Silakan pesan di meja kantin.');
@@ -47,9 +62,9 @@
   }
 
   async function jalanStaf(kode, layar) {
-    for (;;) {
+    for (let coba = 0; ; coba++) {
       try {
-        const a = await alamat(kode, '../../staf.json');
+        const a = await alamat(kode, '../../', coba > 0, true);
         const r = await fetch(a + '/api/menu', { signal: AbortSignal.timeout(8000) });
         // kembali: the app returns here by itself when the tunnel address changes.
         if (r.ok) return location.replace(a + '/' + layar + '?kembali=' + encodeURIComponent(location.href));

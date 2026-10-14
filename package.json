@@ -14,7 +14,8 @@
     "build": "npm run build:server && npm --prefix app run build",
     "dev:app": "npm --prefix app run dev",
     "uji-beban": "node dist/server/uji-beban.js",
-    "paket": "npm run build && tar -czf kantin-paket.tgz dist app/build/client package.json package-lock.json README.md docs/deploy-termux.md scripts"
+    "paket": "npm run build && tar -czf kantin-paket.tgz dist app/build/client package.json package-lock.json README.md docs/deploy-termux.md scripts",
+    "uji-pengguna": "node dist/server/uji-pengguna.js"
   },
   "dependencies": {
     "express": "^5.2.1",

@@ -2,7 +2,7 @@
  * Static QR for a quick tunnel: the printed QR points at a fixed GitHub Pages page, and this script keeps
  * that page told where the server currently is. Runs on the host phone next to cloudflared (scripts/tunnel.sh).
  * Every 30 s it reads the trycloudflare address and the QR code; when either changed it writes alamat.json
- * to the gh-pages branch. The same is done for the staff code (staf.json, static order/kitchen links). The address is encrypted with the QR code, so the public repo does not reveal it.
+ * to the gh-pages branch, with the address also encrypted with the staff code for the static order/kitchen links. The address is encrypted with the QR code, so the public repo does not reveal it.
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -29,6 +29,14 @@ export async function kunciAlamat(alamat: string, kode: string): Promise<AlamatT
 export async function bukaAlamat(k: AlamatTerkunci, kode: string): Promise<string> {
   const isi = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: Buffer.from(k.iv, 'base64') }, await kunci(kode), Buffer.from(k.data, 'base64'));
   return JSON.parse(new TextDecoder().decode(isi)).alamat;
+}
+
+/**
+ * Table and staff addresses in ONE file, so each tunnel change is one commit. Two commits seconds apart made
+ * GitHub Pages cancel its own deploys, and the phones kept getting a dead address.
+ */
+export async function isiAlamat(host: string, kode: string, staf: string): Promise<string> {
+  return JSON.stringify({ ...(await kunciAlamat(host, kode)), ...(staf ? { staf: await kunciAlamat(host, staf) } : {}) });
 }
 
 /** Quick-tunnel address from cloudflared's metrics server, or the last one printed in its log. */
@@ -79,22 +87,16 @@ async function main() {
   const repo = process.env.KANTIN_REPO ?? 'selfproclaimengineer/canteen-ordering-system';
   const dbFile = join(process.env.KANTIN_DATA ?? 'data', 'kantin.db');
   let terakhir = '';
-  let terakhirStaf = '';
   for (;;) {
     try {
       const host = await hostTunnel(fetch, 'http://127.0.0.1:20241/quicktunnel', '.tunnel.log');
       const kode = bacaKode(dbFile, 'qr_kode');
       const staf = bacaKode(dbFile, 'staf_kode');
-      if (host && kode && `${host}|${kode}` !== terakhir) {
-        await terbitkan(fetch, repo, token, JSON.stringify(await kunciAlamat(host, kode)));
-        terakhir = `${host}|${kode}`;
-        console.log(`QR statis: alamat diumumkan (${host})`);
-      }
-      // Static links for HP Order and HP Dapur; the staff code exists once Admin opens Edit > QR.
-      if (host && staf && `${host}|${staf}` !== terakhirStaf) {
-        await terbitkan(fetch, repo, token, JSON.stringify(await kunciAlamat(host, staf)), 'staf.json');
-        terakhirStaf = `${host}|${staf}`;
-        console.log('Link staf: alamat diumumkan');
+      // The staff code (static HP Order / HP Dapur links) exists once Admin opens Edit > QR.
+      if (host && kode && `${host}|${kode}|${staf}` !== terakhir) {
+        await terbitkan(fetch, repo, token, await isiAlamat(host, kode, staf));
+        terakhir = `${host}|${kode}|${staf}`;
+        console.log(`QR statis: alamat diumumkan (${host})${staf ? ' + link staf' : ''}`);
       }
     } catch (e) {
       console.log(`QR statis: gagal mengumumkan, coba lagi 30 detik: ${e instanceof Error ? e.message : e}`);
