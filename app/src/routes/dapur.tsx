@@ -32,7 +32,7 @@ const LABEL_WAKTU: Record<WaktuAmbil, string> = { sekarang: 'Sekarang', ist1: 'I
 export function clientLoader() {
   if (!sesi.token()) {
     sesi.setMode('order');
-    return redirect('/order');
+    return redirect('/order?masuk=dapur');
   }
   sesi.setMode('dapur');
   return null;

@@ -175,3 +175,18 @@ Catatan:
 - Setelah HP menyala ulang, QR siap lagi dalam ±1–3 menit. Selama itu halaman QR menampilkan "Server kantin sedang dinyalakan" dan mencoba lagi sendiri.
 - Token bisa menulis ke repo. Kalau HP hilang, hapus token di GitHub (Settings › Fine-grained tokens › Delete). Token kedaluwarsa sesuai tanggal yang dipilih; buat yang baru dan ulangi langkah 3.
 - Untuk mematikan tunnel: `touch ~/kantin/.tanpa-tunnel`.
+
+## Link tetap untuk HP Order dan HP Dapur
+
+Selain QR pelanggan, HP Order dan HP Dapur juga punya link yang tidak berubah walaupun server atau tunnel dinyalakan ulang:
+
+- `https://selfproclaimengineer.github.io/canteen-ordering-system/staf/<kode-staf>/order`
+- `https://selfproclaimengineer.github.io/canteen-ordering-system/staf/<kode-staf>/dapur`
+
+Kode staf berbeda dari kode QR meja, jadi pelanggan yang memindai QR tidak bisa membuka layar staf. Link lengkapnya ada di **Edit › QR › Link tetap HP Order dan HP Dapur** (tombol **Salin**). Kode staf dibuat saat bagian itu pertama kali dibuka, dan alamatnya diumumkan ke GitHub Pages dalam ±1 menit (baris `Link staf: alamat diumumkan` di Termux).
+
+Cara pasang di HP Order / HP Dapur: buka link di Chrome, lalu menu ⋮ › **Tambahkan ke layar utama**.
+
+- Kalau server mati lebih dari 30 detik (misalnya alamat tunnel berganti), halaman kembali sendiri ke link tetap, lalu masuk lagi begitu server menjawab.
+- Alamat tunnel yang baru berarti sesi Dapur baru: HP Dapur langsung menampilkan keypad PIN Dapur.
+- Kalau link staf bocor, tekan **Ganti link staf** di Edit › QR, lalu pasang ulang shortcut di semua HP Order dan HP Dapur.

@@ -328,3 +328,17 @@ test('the student sees what they ordered, with options and note, but not the kit
   ]);
   expect(JSON.stringify(res.body)).not.toContain('siap_at');
 });
+
+test('admin gets a separate staff code for the static order and kitchen links, and can replace it', async () => {
+  const { app } = setup({ hanyaSekolah: false });
+  const auth = { Authorization: `Bearer ${await login(app, 'admin')}` };
+  expect((await request(app).get('/api/admin/qr/staf')).status).toBe(401);
+  const pertama = (await request(app).get('/api/admin/qr/staf').set(auth)).body.kode as string;
+  expect(pertama).toMatch(/^[A-Za-z0-9]{22}$/);
+  expect(pertama).not.toBe(KODE);
+  expect((await request(app).get('/api/admin/qr/staf').set(auth)).body.kode).toBe(pertama);
+  const baru = (await request(app).post('/api/admin/qr/ganti-staf').set(auth)).body.kode;
+  expect(baru).toMatch(/^[A-Za-z0-9]{22}$/);
+  expect(baru).not.toBe(pertama);
+  expect((await request(app).get('/api/menu')).headers['access-control-allow-origin']).toBe('*');
+});

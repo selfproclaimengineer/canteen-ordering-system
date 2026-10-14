@@ -9,7 +9,7 @@ import { get } from '../db';
 import { HttpError, idParam, parse, requireRole } from '../http';
 import { adaOrderQrAktif, ambilOrder, batalPelanggan, buatOrder } from '../order-repo';
 import { type AturQr, bacaQr, buatKodeQr, entriValid, ipDiizinkan, ipPengirim, qrAktif, rentangTerkecil, samaAman } from '../qr';
-import { getPengaturan, setSetting } from '../settings';
+import { getPengaturan, getSetting, setSetting } from '../settings';
 
 export function qrRoutes(ctx: Ctx): Router {
   const r = Router();
@@ -117,6 +117,19 @@ export function adminQrRoutes(ctx: Ctx): Router {
     setSetting(ctx.db, 'qr_buka', buka ? '1' : '0');
     ctx.emit({ type: 'menu-changed' });
     res.json(bacaQr(ctx.db));
+  });
+
+  // Static links for the counter and kitchen phones use their own code, so a table QR never opens staff screens.
+  r.get('/qr/staf', (_req, res) => {
+    let kode = getSetting(ctx.db, 'staf_kode');
+    if (!kode) setSetting(ctx.db, 'staf_kode', (kode = buatKodeQr()));
+    res.json({ kode });
+  });
+
+  r.post('/qr/ganti-staf', (_req, res) => {
+    const kode = buatKodeQr();
+    setSetting(ctx.db, 'staf_kode', kode);
+    res.json({ kode });
   });
 
   r.post('/qr/ganti-kode', (_req, res) => {

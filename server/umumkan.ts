@@ -2,7 +2,7 @@
  * Static QR for a quick tunnel: the printed QR points at a fixed GitHub Pages page, and this script keeps
  * that page told where the server currently is. Runs on the host phone next to cloudflared (scripts/tunnel.sh).
  * Every 30 s it reads the trycloudflare address and the QR code; when either changed it writes alamat.json
- * to the gh-pages branch. The address is encrypted with the QR code, so the public repo does not reveal it.
+ * to the gh-pages branch. The same is done for the staff code (staf.json, static order/kitchen links). The address is encrypted with the QR code, so the public repo does not reveal it.
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -45,8 +45,8 @@ export async function hostTunnel(fetchFn: typeof fetch, metrikUrl: string, logFi
   return semua ? semua[semua.length - 1] : null;
 }
 
-export async function terbitkan(fetchFn: typeof fetch, repo: string, token: string, isi: string): Promise<void> {
-  const url = `https://api.github.com/repos/${repo}/contents/alamat.json`;
+export async function terbitkan(fetchFn: typeof fetch, repo: string, token: string, isi: string, file = 'alamat.json'): Promise<void> {
+  const url = `https://api.github.com/repos/${repo}/contents/${file}`;
   const headers = { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'User-Agent': 'kantin-umumkan' };
   const lama = await fetchFn(`${url}?ref=gh-pages`, { headers, signal: AbortSignal.timeout(15000) });
   const sha = lama.ok ? ((await lama.json()) as { sha?: string }).sha : undefined;
@@ -59,11 +59,11 @@ export async function terbitkan(fetchFn: typeof fetch, repo: string, token: stri
   if (!res.ok) throw new Error(`GitHub ${res.status}${res.status === 401 ? ' (token salah atau kedaluwarsa)' : ''}`);
 }
 
-function bacaKode(dbFile: string): string {
+function bacaKode(dbFile: string, key: 'qr_kode' | 'staf_kode'): string {
   if (!existsSync(dbFile)) return '';
   const db = new DatabaseSync(dbFile, { readOnly: true });
   try {
-    return (db.prepare("SELECT value FROM pengaturan WHERE key = 'qr_kode'").get() as { value?: string } | undefined)?.value ?? '';
+    return (db.prepare('SELECT value FROM pengaturan WHERE key = ?').get(key) as { value?: string } | undefined)?.value ?? '';
   } finally {
     db.close();
   }
@@ -79,14 +79,22 @@ async function main() {
   const repo = process.env.KANTIN_REPO ?? 'selfproclaimengineer/canteen-ordering-system';
   const dbFile = join(process.env.KANTIN_DATA ?? 'data', 'kantin.db');
   let terakhir = '';
+  let terakhirStaf = '';
   for (;;) {
     try {
       const host = await hostTunnel(fetch, 'http://127.0.0.1:20241/quicktunnel', '.tunnel.log');
-      const kode = bacaKode(dbFile);
+      const kode = bacaKode(dbFile, 'qr_kode');
+      const staf = bacaKode(dbFile, 'staf_kode');
       if (host && kode && `${host}|${kode}` !== terakhir) {
         await terbitkan(fetch, repo, token, JSON.stringify(await kunciAlamat(host, kode)));
         terakhir = `${host}|${kode}`;
         console.log(`QR statis: alamat diumumkan (${host})`);
+      }
+      // Static links for HP Order and HP Dapur; the staff code exists once Admin opens Edit > QR.
+      if (host && staf && `${host}|${staf}` !== terakhirStaf) {
+        await terbitkan(fetch, repo, token, JSON.stringify(await kunciAlamat(host, staf)), 'staf.json');
+        terakhirStaf = `${host}|${staf}`;
+        console.log('Link staf: alamat diumumkan');
       }
     } catch (e) {
       console.log(`QR statis: gagal mengumumkan, coba lagi 30 detik: ${e instanceof Error ? e.message : e}`);
