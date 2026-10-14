@@ -45,3 +45,10 @@ test('terbitkan creates the file when missing and reports a bad token', async ()
   const ditolak = (async () => jawab(401, { message: 'Bad credentials' })) as unknown as typeof fetch;
   await expect(terbitkan(ditolak, 'o/r', 'T', '{}')).rejects.toThrow('401');
 });
+
+test('terbitkan can write another file, for the staff links', async () => {
+  const urls: string[] = [];
+  const fetchFn = (async (url: string, init?: RequestInit) => { urls.push(String(url)); return init?.method === 'PUT' ? jawab(201, {}) : jawab(404, {}); }) as unknown as typeof fetch;
+  await terbitkan(fetchFn, 'o/r', 'T', '{}', 'staf.json');
+  expect(urls).toEqual(['https://api.github.com/repos/o/r/contents/staf.json?ref=gh-pages', 'https://api.github.com/repos/o/r/contents/staf.json']);
+});

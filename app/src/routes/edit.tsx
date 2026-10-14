@@ -65,6 +65,8 @@ export default function Edit() {
   const [qr, setQr] = useState<AturQr | null>(null);
   const [gambarQr, setGambarQr] = useState('');
   const [yakinGanti, setYakinGanti] = useState(false);
+  const [kodeStaf, setKodeStaf] = useState('');
+  const [yakinStaf, setYakinStaf] = useState(false);
   const [ditolak, setDitolak] = useState<{ ip: string; waktu: number }[]>([]);
   const [pilihTolak, setPilihTolak] = useState<string[]>([]);
   const urlQr = qr && qr.alamat && qr.kode ? `${qr.alamat}/pesan/${qr.kode}` : '';
@@ -76,6 +78,7 @@ export default function Edit() {
       api<AturQr>('/admin/qr'),
       api<{ ip: string; waktu: number }[]>('/admin/qr/ditolak'),
     ]);
+    api<{ kode: string }>('/admin/qr/staf').then((s) => setKodeStaf(s.kode), () => setKodeStaf(''));
     setData(d);
     setAtur(a);
     setQr(q);
@@ -388,6 +391,36 @@ export default function Edit() {
                     </button>
                   </div>
                 </div>
+                {kodeStaf && (
+                  <div className="bagian">
+                    <h3>Link tetap HP Order dan HP Dapur</h3>
+                    <small>Buka di Chrome HP Order / HP Dapur, lalu menu ⋮ › Tambahkan ke layar utama. Link ini tidak berubah walaupun server dinyalakan ulang. Jangan dibagikan ke pelanggan.</small>
+                    {(['order', 'dapur'] as const).map((layar) => {
+                      const link = `${qr.alamat}/staf/${kodeStaf}/${layar}`;
+                      return (
+                        <div key={layar} className="form-baris">
+                          <b>{layar === 'order' ? 'Order' : 'Dapur'}</b>
+                          <input readOnly value={link} onFocus={(e) => e.target.select()} />
+                          <button onClick={() => void navigator.clipboard?.writeText(link).then(() => setPesan({ teks: 'Link disalin', nada: 'hijau' }), () => undefined)}>Salin</button>
+                        </div>
+                      );
+                    })}
+                    <button
+                      className="merah"
+                      onClick={() => {
+                        if (!yakinStaf) {
+                          setYakinStaf(true);
+                          window.setTimeout(() => setYakinStaf(false), 3000);
+                          return;
+                        }
+                        setYakinStaf(false);
+                        void jalan(() => api<{ kode: string }>('/admin/qr/ganti-staf', { method: 'POST' }).then((s) => setKodeStaf(s.kode)), 'Link staf diganti. Pasang ulang shortcut di HP Order dan Dapur.');
+                      }}
+                    >
+                      {yakinStaf ? 'Yakin? Shortcut lama mati' : 'Ganti link staf'}
+                    </button>
+                  </div>
+                )}
                 {qr.cek_jaringan && (
                 <>
                 <div className="bagian">

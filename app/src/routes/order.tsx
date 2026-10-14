@@ -30,7 +30,8 @@ export default function Order() {
   const [data, setData] = useState<DataMenu | null>(null);
   const [siap, setSiap] = useState<number[]>([]);
   const [konfirmasi, setKonfirmasi] = useState<Konfirmasi | null>(null);
-  const [pinBuka, setPinBuka] = useState(false);
+  // ?masuk=dapur comes from the static kitchen link when this phone has no kitchen session yet.
+  const [pinBuka, setPinBuka] = useState(() => new URLSearchParams(window.location.search).get('masuk') === 'dapur');
   const [pinPesan, setPinPesan] = useState('');
   const tahan = useRef(0);
 
