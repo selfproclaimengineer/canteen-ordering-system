@@ -204,3 +204,14 @@ Sekali saja:
 Setelah itu, setiap pagi cukup tekan **Caeno**. Jendela Termux terbuka dan server menyala. Jangan tutup jendela itu. Kalau server sudah berjalan, tombol hanya memberi tahu dan tidak menyalakan server kedua.
 
 Kalau tombol tidak membuka apa-apa: Pengaturan › Aplikasi › Termux › izinkan **Tampilkan di atas aplikasi lain** (Display over other apps).
+
+## Jaringan lambat dan uji 50 pengguna
+
+`npm run uji-pengguna -- --url http://127.0.0.1:3000 --kode <kode QR> --pengguna 50 --yakin` menjalankan 50 HP sekaligus ke server uji: 2 HP Order, 2 HP Dapur (dengan WebSocket), dan 46 pelanggan QR yang memesan lalu memantau status. Tambahkan `--lag` (200–1500 ms per paket, 2% macet 6 detik) atau `--lag-berat` (sampai 2,7 detik, 10% macet) untuk meniru WiFi yang lemot. Jangan arahkan ke server kantin yang sedang dipakai: uji ini membuat pesanan sungguhan.
+
+Hasil di laptop (2026-10-14): jaringan normal, semua permintaan p95 di bawah 40 ms tanpa gagal. Jaringan lemot berat, semua 46 pesanan tetap sampai dan selesai; pesanan sampai ke server p95 ±10 detik. Server bukan penghambat; lambatnya dari jaringan.
+
+Yang dilakukan aplikasi saat jaringan lambat:
+- Kirim pesanan memakai batas waktu yang bertambah (5, 10, lalu 20 detik) dan dikirim ulang dengan kode yang sama, jadi tidak pernah dobel.
+- HP Order/Dapur yang dibuka dari link tetap hanya kembali ke link tetap kalau server benar-benar tidak menjawab sekitar 30 detik, bukan sekadar sambungan live terputus.
+- Alamat untuk QR dan link staf diumumkan dalam satu file. Kalau salinan di GitHub Pages masih lama (bisa sampai 10 menit), halaman link mengambil alamat terbaru langsung dari API GitHub.

@@ -38,7 +38,8 @@
 
   async function alamat(kode, base, segar, staf) {
     const semua = await ambilJson(base, segar);
-    const j = staf ? semua.staf : semua;
+    // Servers older than v7 still write the staff address to its own staf.json.
+    const j = staf ? semua.staf ?? (await fetch(base + 'staf.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null))) : semua;
     if (!j) throw new Error('link staf belum diumumkan');
     const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('kantin-qr:' + kode));
     const kunci = await crypto.subtle.importKey('raw', hash, 'AES-GCM', false, ['decrypt']);
