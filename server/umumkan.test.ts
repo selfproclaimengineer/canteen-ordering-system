@@ -1,7 +1,7 @@
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { bukaAlamat, hostTunnel, kunciAlamat, terbitkan } from './umumkan';
+import { bukaAlamat, hostTunnel, isiAlamat, kunciAlamat, terbitkan } from './umumkan';
 
 const jawab = (status: number, body: unknown) => new Response(JSON.stringify(body), { status });
 
@@ -51,4 +51,12 @@ test('terbitkan can write another file, for the staff links', async () => {
   const fetchFn = (async (url: string, init?: RequestInit) => { urls.push(String(url)); return init?.method === 'PUT' ? jawab(201, {}) : jawab(404, {}); }) as unknown as typeof fetch;
   await terbitkan(fetchFn, 'o/r', 'T', '{}', 'staf.json');
   expect(urls).toEqual(['https://api.github.com/repos/o/r/contents/staf.json?ref=gh-pages', 'https://api.github.com/repos/o/r/contents/staf.json']);
+});
+
+test('isiAlamat puts the table and staff addresses in one file, each opened by its own code', async () => {
+  const j = JSON.parse(await isiAlamat('https://a.trycloudflare.com', 'KodeMeja', 'KodeStaf'));
+  expect(await bukaAlamat(j, 'KodeMeja')).toBe('https://a.trycloudflare.com');
+  expect(await bukaAlamat(j.staf, 'KodeStaf')).toBe('https://a.trycloudflare.com');
+  await expect(bukaAlamat(j.staf, 'KodeMeja')).rejects.toThrow();
+  expect(JSON.parse(await isiAlamat('https://a.trycloudflare.com', 'KodeMeja', '')).staf).toBeUndefined();
 });

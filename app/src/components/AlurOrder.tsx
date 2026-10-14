@@ -172,6 +172,7 @@ export function useAlurOrder(opts: {
     setMengirim(true);
     setInfo(null);
     const uuid = uuidV4();
+    let coba = 0;
     const hasil = await kirimOrder(
       {
         ...bodyOrder(items, waktu, o.current.device(), uuid),
@@ -179,7 +180,8 @@ export function useAlurOrder(opts: {
         ...(o.current.catatan && catatan.trim() ? { catatan: catatan.trim() } : {}),
       },
       // A half-dead network can hang fetch; abort and retry (same client_uuid, so no duplicate).
-      (b) => fetch(o.current.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b), signal: AbortSignal.timeout(5000) }),
+      // The limit grows 5 s, 10 s, 20 s: on a slow WiFi a fixed 5 s cut off answers that were on their way.
+      (b) => fetch(o.current.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b), signal: AbortSignal.timeout(Math.min(20_000, 5000 * 2 ** coba++)) }),
       (ms) => new Promise((r) => window.setTimeout(r, ms)),
       () => setMenunggu(true),
     );
