@@ -13,6 +13,9 @@ termux-wake-lock
 # Find it with: ip -4 addr show | grep inet   (look for the wlan/ap interface)
 # export KANTIN_LOKAL="127.0.0.0/8,::1/128,192.168.43.0/24"
 
+# Keep the home-screen button (Termux:Widget) current after updates.
+sh scripts/pasang-tombol.sh
+
 # Internet access with a static QR (scripts/tunnel.sh). Skip with: touch ~/kantin/.tanpa-tunnel
 if command -v cloudflared >/dev/null && [ ! -f .tanpa-tunnel ]; then
   pkill -f "scripts/tunnel.sh" 2>/dev/null

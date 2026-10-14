@@ -190,3 +190,17 @@ Cara pasang di HP Order / HP Dapur: buka link di Chrome, lalu menu ⋮ › **Tam
 - Kalau server mati lebih dari 30 detik (misalnya alamat tunnel berganti), halaman kembali sendiri ke link tetap, lalu masuk lagi begitu server menjawab.
 - Alamat tunnel yang baru berarti sesi Dapur baru: HP Dapur langsung menampilkan keypad PIN Dapur.
 - Kalau link staf bocor, tekan **Ganti link staf** di Edit › QR, lalu pasang ulang shortcut di semua HP Order dan HP Dapur.
+
+## Tombol "Caeno" di layar utama
+
+Supaya server bisa dinyalakan tanpa mengetik perintah, pasang tombol **Caeno** (gambar wajan dengan telur ceplok) di layar utama HP server.
+
+Sekali saja:
+
+1. Pasang **Termux:Widget** dari **F-Droid** (sumber yang sama dengan Termux).
+2. Jalankan server sekali dengan `cd ~/kantin && ./scripts/jalan.sh`. Langkah ini memasang tombolnya ke `~/.shortcuts/Caeno` (atau jalankan `sh ~/kantin/scripts/pasang-tombol.sh`).
+3. Di layar utama, tekan lama bagian kosong › **Widget** › **Termux:Widget** › pilih widget **1×1** (Termux shortcut) › pilih **Caeno**.
+
+Setelah itu, setiap pagi cukup tekan **Caeno**. Jendela Termux terbuka dan server menyala. Jangan tutup jendela itu. Kalau server sudah berjalan, tombol hanya memberi tahu dan tidak menyalakan server kedua.
+
+Kalau tombol tidak membuka apa-apa: Pengaturan › Aplikasi › Termux › izinkan **Tampilkan di atas aplikasi lain** (Display over other apps).

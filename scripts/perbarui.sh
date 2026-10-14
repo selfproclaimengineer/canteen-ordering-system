@@ -46,7 +46,7 @@ for f in $DIGANTI; do [ -e "$f" ] && mv "$f" ".lama/$f"; done
 for f in $DIGANTI; do [ -e ".baru/$f" ] && mv ".baru/$f" "$f"; done
 # mv gives the scripts new files, so the copy of jalan.sh that is running now is not disturbed.
 mkdir -p scripts docs
-for f in .baru/scripts/*.sh; do [ -e "$f" ] && mv "$f" scripts/ && chmod +x "scripts/$(basename "$f")"; done
+for f in .baru/scripts/*.sh .baru/scripts/*.png; do [ -e "$f" ] && mv "$f" scripts/ && chmod +x "scripts/$(basename "$f")"; done
 [ -e .baru/README.md ] && mv .baru/README.md README.md
 [ -e .baru/docs/deploy-termux.md ] && mv .baru/docs/deploy-termux.md docs/deploy-termux.md
 rm -rf .baru
